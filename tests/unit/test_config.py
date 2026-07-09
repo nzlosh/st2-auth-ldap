@@ -275,7 +275,7 @@ class LDAPBackendConfigurationTest(unittest.TestCase):
     def test_invalid_group_dns_check_option(self):
         expected_msg = ('Invalid value "invalid" for group_dns_check option. Valid '
                         'values are: and, or.')
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             ValueError,
             expected_msg,
             ldap_backend.LDAPAuthenticationBackend,
