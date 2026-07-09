@@ -4,4 +4,4 @@ python-ldap>=3.4.0,<3.5.0
 #   - 3.1 adds python3.8
 #   - 4.2 adds python3.9
 #   - 5.2.1 adds python3.11
-cachetools>=3.1,<5.4.0
+cachetools<5.4.0,>=3.1
