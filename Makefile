@@ -18,6 +18,7 @@ VIRTUALENV_DIR ?= virtualenv
 
 ST2_REPO_PATH ?= /tmp/st2
 ST2_REPO_BRANCH ?= master
+PYBIN := python3
 
 PIP_OPTIONS := $(ST2_PIP_OPTIONS)
 
@@ -60,11 +61,11 @@ requirements: .clone_st2_repo virtualenv
 	@echo "================== register st2auth ======================"
 	@echo ""
 	# Install st2auth
-	(. $(VIRTUALENV_DIR)/bin/activate; cd $(ST2_REPO_PATH)/st2auth; python3 setup.py develop --no-deps)
+	(. $(VIRTUALENV_DIR)/bin/activate; cd $(ST2_REPO_PATH)/st2auth; $(PYBIN) -m pip install --no-deps --editable .)
 	@echo ""
 	@echo "================== register ldap ======================"
 	@echo ""
-	(. $(VIRTUALENV_DIR)/bin/activate; python3 setup.py develop --no-deps)
+	(. $(VIRTUALENV_DIR)/bin/activate; $(PYBIN) -m pip install --no-deps --editable .)
 
 .PHONY: requirements-ci
 
@@ -74,7 +75,7 @@ $(VIRTUALENV_DIR)/bin/activate:
 	@echo
 	@echo "==================== virtualenv ===================="
 	@echo
-	test -d $(VIRTUALENV_DIR) || virtualenv $(VIRTUALENV_DIR) -p python3
+	test -d $(VIRTUALENV_DIR) || $(PYBIN) -m venv $(VIRTUALENV_DIR)
 
 	# Setup PYTHONPATH in bash activate script...
 	# Delete existing entries (if any)
