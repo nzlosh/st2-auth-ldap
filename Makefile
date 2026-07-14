@@ -18,6 +18,7 @@ VIRTUALENV_DIR ?= virtualenv
 
 ST2_REPO_PATH ?= /tmp/st2
 ST2_REPO_BRANCH ?= master
+PYBIN := python3
 
 PIP_OPTIONS := $(ST2_PIP_OPTIONS)
 
@@ -44,27 +45,43 @@ play:
 	@echo "`cat /etc/os-release`"
 	@echo
 
+.PHONY: clean
+clean:
+	@echo
+	@echo "==================== clean cache files and virtualenv ===================="
+	@echo
+	rm -rf ./.pytest_cache ./virtualenv ./st2_auth_ldap.egg-info
+	find . -iname '*.pyc' -delete
+	find . -iname '__pycache__' -delete
+
 .PHONY: requirements
 requirements: .clone_st2_repo virtualenv
 	@echo
 	@echo "==================== requirements ===================="
 	@echo
-	$(eval PIP_VERSION := $(shell grep 'PIP_VERSION ?= ' /tmp/st2/Makefile | awk '{ print $$3}'))
-	$(VIRTUALENV_DIR)/bin/pip install --upgrade "pip==$(PIP_VERSION)"
-	$(VIRTUALENV_DIR)/bin/pip install --cache-dir $(HOME)/.pip-cache $(PIP_OPTIONS) -r $(ST2_REPO_PATH)/requirements.txt
-	$(VIRTUALENV_DIR)/bin/pip install --cache-dir $(HOME)/.pip-cache $(PIP_OPTIONS) -r $(ST2_REPO_PATH)/test-requirements.txt
-	$(VIRTUALENV_DIR)/bin/pip install --cache-dir $(HOME)/.pip-cache $(PIP_OPTIONS) -r requirements.txt
-	$(VIRTUALENV_DIR)/bin/pip install --cache-dir $(HOME)/.pip-cache $(PIP_OPTIONS) -r test-requirements.txt
+	$(eval PIP_VERSION ?= $(shell awk '/^PIP_VERSION/ {print $$3}' /tmp/st2/Makefile))
+	$(eval SETUPTOOLS_VERSION ?= $(shell awk '/^SETUPTOOLS_VERSION/ {print $$3}' /tmp/st2/Makefile))
+	@echo
+	@echo
+	@echo Install pip $(PIP_VERSION) and setuptools $(SETUPTOOLS_VERSION) to match st2 core.
+	@echo
+	@echo
+	$(VIRTUALENV_DIR)/bin/$(PYBIN) -m pip install --upgrade "pip==$(PIP_VERSION)"
+	$(VIRTUALENV_DIR)/bin/$(PYBIN) -m pip install --upgrade "setuptools==$(SETUPTOOLS_VERSION)"
+	$(VIRTUALENV_DIR)/bin/$(PYBIN) -m pip install --cache-dir $(HOME)/.pip-cache $(PIP_OPTIONS) -r $(ST2_REPO_PATH)/requirements.txt
+	$(VIRTUALENV_DIR)/bin/$(PYBIN) -m pip install --cache-dir $(HOME)/.pip-cache $(PIP_OPTIONS) -r $(ST2_REPO_PATH)/test-requirements.txt
+	$(VIRTUALENV_DIR)/bin/$(PYBIN) -m pip install --cache-dir $(HOME)/.pip-cache $(PIP_OPTIONS) -r requirements.txt
+	$(VIRTUALENV_DIR)/bin/$(PYBIN) -m pip install --cache-dir $(HOME)/.pip-cache $(PIP_OPTIONS) -r test-requirements.txt
 
 	@echo ""
 	@echo "================== register st2auth ======================"
 	@echo ""
 	# Install st2auth
-	(. $(VIRTUALENV_DIR)/bin/activate; cd $(ST2_REPO_PATH)/st2auth; python3 setup.py develop --no-deps)
+	(. $(VIRTUALENV_DIR)/bin/activate; cd $(ST2_REPO_PATH)/st2auth; $(PYBIN) -m pip install --no-deps --editable .)
 	@echo ""
 	@echo "================== register ldap ======================"
 	@echo ""
-	(. $(VIRTUALENV_DIR)/bin/activate; python3 setup.py develop --no-deps)
+	(. $(VIRTUALENV_DIR)/bin/activate; $(PYBIN) -m pip install --no-deps --editable .)
 
 .PHONY: requirements-ci
 
@@ -74,7 +91,7 @@ $(VIRTUALENV_DIR)/bin/activate:
 	@echo
 	@echo "==================== virtualenv ===================="
 	@echo
-	test -d $(VIRTUALENV_DIR) || virtualenv $(VIRTUALENV_DIR) -p python3
+	test -d $(VIRTUALENV_DIR) || $(PYBIN) -m venv $(VIRTUALENV_DIR)
 
 	# Setup PYTHONPATH in bash activate script...
 	# Delete existing entries (if any)
@@ -126,7 +143,7 @@ unit-tests: requirements .clone_st2_repo .unit-tests
 .PHONY: .clone_st2_repo
 .clone_st2_repo:
 	@echo
-	@echo "==================== cloning st2 repo ===================="
+	@echo "==================== cloning st2 repo [$(ST2_REPO_BRANCH)] ===================="
 	@echo
 	@rm -rf /tmp/st2
 	@git clone https://github.com/StackStorm/st2.git --depth 1 --single-branch --branch $(ST2_REPO_BRANCH) /tmp/st2
